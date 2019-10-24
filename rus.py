@@ -49,7 +49,7 @@ class InvalidSyntaxError(Error):
 
 class RTError(Error):
     def __init__(self, pos_start, pos_end, details, context):
-        super().__init__(pos_start, pos_end, 'Ошибка выполнения', details)
+        super().__init__(pos_start, pos_end, 'Ошибка', details)
         self.context = context
 
     def as_string(self):
@@ -69,7 +69,7 @@ class RTError(Error):
             pos = ctx.parent_entry_pos
             ctx = ctx.parent
 
-        return 'Проследение (самый последний вызов последний):\n' + result
+        return 'Проследение:\n' + result
 
 #######################################
 # POSITION
@@ -104,6 +104,7 @@ class Position():
 
 TT_INT = 'INT'
 TT_FLOAT = 'FLOAT'
+TT_STRING = 'STRING'
 TT_IDENTIFIER = 'IDENTIFIER'
 TT_KEYWORD = 'KEYWORD'
 TT_PLUS = 'PLUS'
@@ -137,7 +138,7 @@ KEYWORDS = [
     'ПО',
     'ИНК',
     'ПОКА',
-    'ФУН'
+    'ФУНК'
 ]
 
 
@@ -189,6 +190,8 @@ class Lexer:
                 tokens.append(self.make_number())
             elif self.current_char in LETTERS:
                 tokens.append(self.make_identifier())
+            elif self.current_char == '"':
+                tokens.append(self.make_string())
             elif self.current_char == '+':
                 tokens.append(Token(TT_PLUS, pos_start=self.pos))
                 self.advance()
@@ -251,6 +254,31 @@ class Lexer:
             return Token(TT_INT, int(num_str), pos_start, self.pos)
         else:
             return Token(TT_FLOAT, float(num_str), pos_start, self.pos)
+
+    def make_string(self):
+        string = ''
+        pos_start = self.pos.copy()
+        escape_character = False
+        self.advance()
+
+        escape_characters = {
+            'н': '\n',
+            'т': '\t'
+        }
+
+        while self.current_char != None and (self.current_char != '"' or escape_character):
+            if escape_character:
+                string += escape_characters.get(self.current_char, self.current_char)
+            else:
+                if self.current_char == "\\":
+                    escape_character = True
+                else:
+                    string += self.current_char
+            self.advance()
+            escape_character = False
+
+        self.advance()
+        return Token(TT_STRING, string, pos_start, self.pos)
 
     def make_identifier(self):
         id_str = ''
@@ -324,6 +352,17 @@ class Lexer:
 
 
 class NumberNode:
+    def __init__(self, tok):
+        self.tok = tok
+
+        self.pos_start = self.tok.pos_start
+        self.pos_end = self.tok.pos_end
+
+    def __repr__(self):
+        return f'{self.tok}'
+
+
+class StringNode:
     def __init__(self, tok):
         self.tok = tok
 
@@ -665,6 +704,11 @@ class Parser:
             self.advance()
             return res.success(NumberNode(tok))
 
+        elif tok.type == TT_STRING:
+            res.register_advancement()
+            self.advance()
+            return res.success(StringNode(tok))
+
         elif tok.type == TT_IDENTIFIER:
             res.register_advancement()
             self.advance()
@@ -701,13 +745,13 @@ class Parser:
                 return res
             return res.success(while_expr)
 
-        elif tok.matches(TT_KEYWORD, 'ФУН'):
+        elif tok.matches(TT_KEYWORD, 'ФУНК'):
             func_def = res.register(self.func_def())
             if res.error:
                 return res
             return res.success(func_def)
 
-        return res.failure(InvalidSyntaxError(self.current_tok.pos_start, self.current_tok.pos_end, "Ожидали целое число, число с плавающей точкой, индентифекатор, '+', '—','(', 'ЕСЛИ', 'ДЛЯ', 'ПОКА', или 'ФУН'"))
+        return res.failure(InvalidSyntaxError(self.current_tok.pos_start, self.current_tok.pos_end, "Ожидали целое число, число с плавающей точкой, индентифекатор, '+', '—','(', 'ЕСЛИ', 'ДЛЯ', 'ПОКА', или 'ФУНК'"))
 
     def power(self):
         return self.bin_op(self.call, (TT_POW, ), self.factor)
@@ -729,7 +773,7 @@ class Parser:
             else:
                 arg_nodes.append(res.register(self.expr()))
                 if res.error:
-                    return res.failure(InvalidSyntaxError(self.current_tok.pos_start, self.current_tok.pos_end, "Ожидали ')', 'ПЕРЕМ', 'ЕСЛИ', 'ДЛЯ', 'ПОКА', 'ФУН', целое число, число с плавающей точкой, индентифекатор, '+', '-', '(' или 'НЕ'"))
+                    return res.failure(InvalidSyntaxError(self.current_tok.pos_start, self.current_tok.pos_end, "Ожидали ')', 'ПЕРЕМ', 'ЕСЛИ', 'ДЛЯ', 'ПОКА', 'ФУНК', целое число, число с плавающей точкой, индентифекатор, '+', '-', '(' или 'НЕ'"))
 
                 while self.current_tok.type == TT_COMMA:
                     res.register_advancement()
@@ -814,15 +858,15 @@ class Parser:
         node = res.register(self.bin_op(self.comp_expr, ((TT_KEYWORD, 'И'), (TT_KEYWORD, 'ИЛИ'))))
 
         if res.error:
-            return res.failure(InvalidSyntaxError(self.current_tok.pos_start, self.current_tok.pos_end, "Ожидали 'ПЕРЕМ', 'ЕСЛИ', 'ДЛЯ', 'ПОКА', 'ФУН', целое число, число с плавающей точкой, индентифекатор, '+', '—', '(', или 'НЕ'"))
+            return res.failure(InvalidSyntaxError(self.current_tok.pos_start, self.current_tok.pos_end, "Ожидали 'ПЕРЕМ', 'ЕСЛИ', 'ДЛЯ', 'ПОКА', 'ФУНК', целое число, число с плавающей точкой, индентифекатор, '+', '—', '(', или 'НЕ'"))
 
         return res.success(node)
 
     def func_def(self):
         res = ParseResult()
 
-        if not self.current_tok.matches(TT_KEYWORD, 'ФУН'):
-            return res.failure(InvalidSyntaxError(self.current_tok.pos_start, self.current_tok.pos_end, f"Ожидали 'ФУН'"))
+        if not self.current_tok.matches(TT_KEYWORD, 'ФУНК'):
+            return res.failure(InvalidSyntaxError(self.current_tok.pos_start, self.current_tok.pos_end, f"Ожидали 'ФУНК'"))
 
         res.register_advancement()
         self.advance()
@@ -990,13 +1034,14 @@ class Value:
         return RTResult().failure(self.illegal_operation())
 
     def copy(self):
-        raise Exception('Метод копирования не определен')
+        raise Exception('Метод копирования не определён')
 
     def is_true(self):
         return False
 
     def illegal_operation(self, other=None):
-        if not other: other = self
+        if not other:
+            other = self
         return RTError(
             self.pos_start, other.pos_end,
             'Незаконная операция',
@@ -1107,6 +1152,36 @@ class Number(Value):
         return str(self.value)
 
 
+class String(Value):
+    def __init__(self, value):
+        super().__init__()
+        self.value = value
+
+    def added_to(self, other):
+        if isinstance(other, String):
+            return String(self.value + other.value).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, other)
+
+    def multed_by(self, other):
+        if isinstance(other, Number):
+            return String(self.value * other.value).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, other)
+
+    def is_true(self):
+        return len(self.value) > 0
+
+    def copy(self):
+        copy = String(self.value)
+        copy.set_pos(self.pos_start, self.pos_end)
+        copy.set_context(self.context)
+        return copy
+
+    def __repr__(self):
+        return f'"{self.value}"'
+
+
 class Function(Value):
     def __init__(self, name, body_node, arg_names):
         super().__init__()
@@ -1123,14 +1198,14 @@ class Function(Value):
         if len(args) > len(self.arg_names):
             return res.failure(RTError(
                 self.pos_start, self.pos_end,
-                f"{len(args) - len(self.arg_names)} слишком много аргументов передано в '{self.name}'",
+                f"слишком много аргументов передано в '{self.name}' (количество: {len(args) - len(self.arg_names)})",
                 self.context
             ))
 
         if len(args) < len(self.arg_names):
             return res.failure(RTError(
                 self.pos_start, self.pos_end,
-                f"{len(self.arg_names) - len(args)} слишком мало аргументов передано в '{self.name}'",
+                f"слишком мало аргументов передано в '{self.name}' (количество: {len(self.arg_names) - len(args)})",
                 self.context
             ))
 
@@ -1141,7 +1216,8 @@ class Function(Value):
             new_context.symbol_table.set(arg_name, arg_value)
 
         value = res.register(interpreter.visit(self.body_node, new_context))
-        if res.error: return res
+        if res.error:
+            return res
         return res.success(value)
 
     def copy(self):
@@ -1151,7 +1227,7 @@ class Function(Value):
         return copy
 
     def __repr__(self):
-        return f"<функция {self.name}>"
+        return f"<Функция {self.name}>"
 
 #######################################
 # CONTEXT
@@ -1203,6 +1279,9 @@ class Interpreter:
 
     def visit_NumberNode(self, node, context):
         return RTResult().success(Number(node.tok.value).set_context(context).set_pos(node.pos_start, node.pos_end))
+
+    def visit_StringNode(self, node, context):
+        return RTResult().success(String(node.tok.value).set_context(context).set_pos(node.pos_start, node.pos_end))
 
     def visit_VarAccessNode(self, node, context):
         res = RTResult()
@@ -1358,7 +1437,6 @@ class Interpreter:
 
         return res.success(None)
 
-
     def visit_FuncDefNode(self, node, context):
         res = RTResult()
 
@@ -1377,16 +1455,20 @@ class Interpreter:
         args = []
 
         value_to_call = res.register(self.visit(node.node_to_call, context))
-        if res.error: return res
+        if res.error:
+            return res
         value_to_call = value_to_call.copy().set_pos(node.pos_start, node.pos_end)
 
         for arg_node in node.arg_nodes:
             args.append(res.register(self.visit(arg_node, context)))
-            if res.error: return res
+            if res.error:
+                return res
 
         return_value = res.register(value_to_call.execute(args))
-        if res.error: return res
+        if res.error:
+            return res
         return res.success(return_value)
+
 
 #######################################
 # RUN
