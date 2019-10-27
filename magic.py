@@ -4,6 +4,8 @@
 
 from strings_with_arrows import *
 import string
+import os
+import math
 
 #######################################
 # CONSTANTS
@@ -140,7 +142,7 @@ KEYWORDS = [
     'ПО',
     'ИНК',
     'ПОКА',
-    'ФУНК'
+    'ОПРЕД'
 ]
 
 
@@ -560,7 +562,7 @@ class Parser:
         else:
             element_nodes.append(res.register(self.expr()))
             if res.error:
-                return res.failure(InvalidSyntaxError(self.current_tok.pos_start, self.current_tok.pos_end, "Ожидали ']', 'ПЕРЕМ', 'ЕСЛИ', 'ДЛЯ', 'ПОКА', 'ФУНК', целое число, число с плавающей точкой, индентифекатор, '+', '-', '(', '[' или 'НЕ'"))
+                return res.failure(InvalidSyntaxError(self.current_tok.pos_start, self.current_tok.pos_end, "Ожидали ']', 'ПЕРЕМ', 'ЕСЛИ', 'ДЛЯ', 'ПОКА', 'ОПРЕД', целое число, число с плавающей точкой, индентифекатор, '+', '-', '(', '[' или 'НЕ'"))
 
             while self.current_tok.type == TT_COMMA:
                 res.register_advancement()
@@ -802,13 +804,13 @@ class Parser:
                 return res
             return res.success(while_expr)
 
-        elif tok.matches(TT_KEYWORD, 'ФУНК'):
+        elif tok.matches(TT_KEYWORD, 'ОПРЕД'):
             func_def = res.register(self.func_def())
             if res.error:
                 return res
             return res.success(func_def)
 
-        return res.failure(InvalidSyntaxError(self.current_tok.pos_start, self.current_tok.pos_end, "Ожидали целое число, число с плавающей точкой, индентифекатор, '+', '—','(', '[', 'ЕСЛИ', 'ДЛЯ', 'ПОКА', или 'ФУНК'"))
+        return res.failure(InvalidSyntaxError(self.current_tok.pos_start, self.current_tok.pos_end, "Ожидали целое число, число с плавающей точкой, индентифекатор, '+', '—','(', '[', 'ЕСЛИ', 'ДЛЯ', 'ПОКА', или 'ОПРЕД'"))
 
     def power(self):
         return self.bin_op(self.call, (TT_POW, ), self.factor)
@@ -830,7 +832,7 @@ class Parser:
             else:
                 arg_nodes.append(res.register(self.expr()))
                 if res.error:
-                    return res.failure(InvalidSyntaxError(self.current_tok.pos_start, self.current_tok.pos_end, "Ожидали ')', 'ПЕРЕМ', 'ЕСЛИ', 'ДЛЯ', 'ПОКА', 'ФУНК', целое число, число с плавающей точкой, индентифекатор, '+', '-', '(', '[', или 'НЕ'"))
+                    return res.failure(InvalidSyntaxError(self.current_tok.pos_start, self.current_tok.pos_end, "Ожидали ')', 'ПЕРЕМ', 'ЕСЛИ', 'ДЛЯ', 'ПОКА', 'ОПРЕД', целое число, число с плавающей точкой, индентифекатор, '+', '-', '(', '[', или 'НЕ'"))
 
                 while self.current_tok.type == TT_COMMA:
                     res.register_advancement()
@@ -915,15 +917,15 @@ class Parser:
         node = res.register(self.bin_op(self.comp_expr, ((TT_KEYWORD, 'И'), (TT_KEYWORD, 'ИЛИ'))))
 
         if res.error:
-            return res.failure(InvalidSyntaxError(self.current_tok.pos_start, self.current_tok.pos_end, "Ожидали 'ПЕРЕМ', 'ЕСЛИ', 'ДЛЯ', 'ПОКА', 'ФУНК', целое число, число с плавающей точкой, индентифекатор, '+', '—', '(', '[', или 'НЕ'"))
+            return res.failure(InvalidSyntaxError(self.current_tok.pos_start, self.current_tok.pos_end, "Ожидали 'ПЕРЕМ', 'ЕСЛИ', 'ДЛЯ', 'ПОКА', 'ОПРЕД', целое число, число с плавающей точкой, индентифекатор, '+', '—', '(', '[', или 'НЕ'"))
 
         return res.success(node)
 
     def func_def(self):
         res = ParseResult()
 
-        if not self.current_tok.matches(TT_KEYWORD, 'ФУНК'):
-            return res.failure(InvalidSyntaxError(self.current_tok.pos_start, self.current_tok.pos_end, f"Ожидали 'ФУНК'"))
+        if not self.current_tok.matches(TT_KEYWORD, 'ОПРЕД'):
+            return res.failure(InvalidSyntaxError(self.current_tok.pos_start, self.current_tok.pos_end, f"Ожидали 'ОПРЕД'"))
 
         res.register_advancement()
         self.advance()
@@ -1208,6 +1210,14 @@ class Number(Value):
     def __repr__(self):
         return str(self.value)
 
+Number.null = Number(0)
+Number.true = Number(1)
+Number.false = Number(0)
+Number.math_E = Number(math.e)
+Number.math_PI = Number(math.pi)
+Number.math_TAU = Number(math.tau)
+Number.math_INF = Number(math.inf)
+
 
 class String(Value):
     def __init__(self, value):
@@ -1234,6 +1244,9 @@ class String(Value):
         copy.set_pos(self.pos_start, self.pos_end)
         copy.set_context(self.context)
         return copy
+
+    def __str__(self):
+        return self.value
 
     def __repr__(self):
         return f'"{self.value}"'
@@ -1278,49 +1291,78 @@ class List(Value):
             return None, Value.illegal_operation(self, other)
 
     def copy(self):
-        copy = List(self.elements[:])
+        copy = List(self.elements)
         copy.set_pos(self.pos_start, self.pos_end)
         copy.set_context(self.context)
         return copy
+
+    def __str__(self):
+        return ", ".join([str(x) for x in self.elements])
 
     def __repr__(self):
         return f'[{", ".join([str(x) for x in self.elements])}]'
 
 
-class Function(Value):
-    def __init__(self, name, body_node, arg_names):
+class BaseFunction(Value):
+    def __init__(self, name):
         super().__init__()
         self.name = name or "<анонимная>"
+
+    def generate_new_context(self):
+        new_context = Context(self.name, self.context, self.pos_start)
+        new_context.symbol_table = SymbolTable(new_context.parent.symbol_table)
+
+        return new_context
+
+    def check_args(self, arg_names, args):
+        res = RTResult()
+
+        if len(args) > len(arg_names):
+            return res.failure(RTError(
+                self.pos_start, self.pos_end,
+                f"слишком много аргументов передано в '{self.name}' (количество: {len(args) - len(arg_names)})",
+                self.context
+            ))
+
+        if len(args) < len(arg_names):
+            return res.failure(RTError(
+                self.pos_start, self.pos_end,
+                f"слишком мало аргументов передано в '{self.name}' (количество: {len(arg_names) - len(args)})",
+                self.context
+            ))
+
+        return res.success(None)
+
+    def populate_args(self, arg_names, args, exec_ctx):
+        for i in range(len(args)):
+            arg_name = arg_names[i]
+            arg_value = args[i]
+            arg_value.set_context(exec_ctx)
+            exec_ctx.symbol_table.set(arg_name, arg_value)
+
+    def check_and_populate_args(self, arg_names, args, exec_ctx):
+        res = RTResult()
+        res.register(self.check_args(arg_names, args))
+        if res.error: return res
+        self.populate_args(arg_names, args, exec_ctx)
+        return res.success(None)
+
+
+class Function(BaseFunction):
+    def __init__(self, name, body_node, arg_names):
+        super().__init__(name)
         self.body_node = body_node
         self.arg_names = arg_names
 
     def execute(self, args):
         res = RTResult()
         interpreter = Interpreter()
-        new_context = Context(self.name, self.context, self.pos_start)
-        new_context.symbol_table = SymbolTable(new_context.parent.symbol_table)
+        exec_ctx = self.generate_new_context()
 
-        if len(args) > len(self.arg_names):
-            return res.failure(RTError(
-                self.pos_start, self.pos_end,
-                f"слишком много аргументов передано в '{self.name}' (количество: {len(args) - len(self.arg_names)})",
-                self.context
-            ))
+        res.register(self.check_and_populate_args(self.arg_names, args, exec_ctx))
+        if res.error: return res
 
-        if len(args) < len(self.arg_names):
-            return res.failure(RTError(
-                self.pos_start, self.pos_end,
-                f"слишком мало аргументов передано в '{self.name}' (количество: {len(self.arg_names) - len(args)})",
-                self.context
-            ))
-
-        for i in range(len(args)):
-            arg_name = self.arg_names[i]
-            arg_value = args[i]
-            arg_value.set_context(new_context)
-            new_context.symbol_table.set(arg_name, arg_value)
-
-        value = res.register(interpreter.visit(self.body_node, new_context))
+        value = res.register(interpreter.visit(self.body_node, exec_ctx))
         if res.error:
             return res
         return res.success(value)
@@ -1333,6 +1375,171 @@ class Function(Value):
 
     def __repr__(self):
         return f"<Функция {self.name}>"
+
+
+class BuiltInFunction(BaseFunction):
+    def __init__(self, name):
+        super().__init__(name)
+
+    def execute(self, args):
+        res = RTResult()
+        exec_ctx = self.generate_new_context()
+
+        method_name = f'execute_{self.name}'
+        method = getattr(self, method_name, self.no_visit_method)
+
+        res.register(self.check_and_populate_args(method.arg_names, args, exec_ctx))
+        if res.error: return res
+
+        return_value = res.register(method(exec_ctx))
+        if res.error: return res
+        return res.success(return_value)
+
+    def no_visit_method(self, node, context):
+        raise Exception(f'execute_{self.name} метод не определён')
+
+    def copy(self):
+        copy = BuiltInFunction(self.name)
+        copy.set_context(self.context)
+        copy.set_pos(self.pos_start, self.pos_end)
+        return copy
+
+    def __repr__(self):
+        return f"<встроенная функция {self.name}>"
+
+    ######### Built-In Functions #########
+
+    def execute_print(self, exec_ctx):
+        print(str(exec_ctx.symbol_table.get('value')))
+        return RTResult().success(Number.null)
+    execute_print.arg_names = ['value']
+
+    def execute_print_ret(self, exec_ctx):
+        return RTResult().success(String(str(exec_ctx.symbol_table.get('value'))))
+    execute_print_ret.arg_names = ['value']
+
+    def execute_input(self, exec_ctx):
+        text = input()
+        return RTResult().success(String(text))
+    execute_input.arg_names = []
+
+    def execute_input_int(self, exec_ctx):
+        while True:
+            text = input()
+            try:
+                number = int(text)
+                break
+            except ValueError:
+                print(f"'{text}' должно быть целое число. Попробуй еще раз!")
+        return RTResult().success(Number(number))
+    execute_input_int.arg_names = []
+
+    def execute_clear(self, exec_ctx):
+        os.system('cls' if os.name == 'nt' else 'clear')
+        return RTResult().success(Number.null)
+    execute_clear.arg_names = []
+
+    def execute_is_number(self, exec_ctx):
+        is_number = isinstance(exec_ctx.symbol_table.get("value"), Number)
+        return RTResult().success(Number.true if is_number else Number.false)
+    execute_is_number.arg_names = ["value"]
+
+    def execute_is_string(self, exec_ctx):
+        is_string = isinstance(exec_ctx.symbol_table.get("value"), String)
+        return RTResult().success(Number.true if is_string else Number.false)
+    execute_is_string.arg_names = ['value']
+
+    def execute_is_list(self, exec_ctx):
+        is_number = isinstance(exec_ctx.symbol_table.get("value"), List)
+        return RTResult().success(Number.true if is_number else Number.false)
+    execute_is_list.arg_names = ["value"]
+
+    def execute_is_function(self, exec_ctx):
+        is_number = isinstance(exec_ctx.symbol_table.get("value"), BaseFunction)
+        return RTResult().success(Number.true if is_number else Number.false)
+    execute_is_function.arg_names = ["value"]
+
+    def execute_append(self, exec_ctx):
+        list_ = exec_ctx.symbol_table.get("list")
+        value = exec_ctx.symbol_table.get("value")
+
+        if not isinstance(list_, List):
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Первый аргумент должен быть список.", exec_ctx))
+
+        list_.elements.append(value)
+        return RTResult().success(Number.null)
+    execute_append.arg_names = ["list", "value"]
+
+    def execute_pop(self, exec_ctx):
+        list_ = exec_ctx.symbol_table.get("list")
+        index = exec_ctx.symbol_table.get("index")
+
+        if not isinstance(list_, List):
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Первый аргумент должен быть список.", exec_ctx))
+
+        if not isinstance(index, Number):
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Второй аргумент должен быть индекс элемента.", exec_ctx))
+
+        try:
+            element = list_.elements.pop(index.value)
+        except:
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Элемент у этого индекса не может быть удален из списка, поскольку индекс находится за пределами границ", exec_ctx))
+        return RTResult().success(element)
+    execute_pop.arg_names = ['list', 'index']
+
+    def execute_extend(self, exec_ctx):
+        listA = exec_ctx.symbol_table.get("listA")
+        listB = exec_ctx.symbol_table.get("listB")
+
+        if not isinstance(listA, List):
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Первый аргумент должен быть список.", exec_ctx))
+
+        if not isinstance(listB, List):
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Второй аргумент должен быть список.", exec_ctx))
+
+        listA.elements.extend(listB.elements)
+        return RTResult().success(Number.null)
+    execute_extend.arg_names = ["listA", "listB"]
+
+    def execute_sqrt(self, exec_ctx):
+        number = exec_ctx.symbol_table.get("value")
+        print(number)
+
+        if not isinstance(number, Number):
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Аргумент должно быть число.", exec_ctx))
+
+        return RTResult().success(Number(math.sqrt(number.value)))
+    execute_sqrt.arg_names = ["value"]
+
+    def execute_pow(self, exec_ctx):
+        base = exec_ctx.symbol_table.get("base")
+        exp = exec_ctx.symbol_table.get("exp")
+
+        if not isinstance(base, Number):
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Первый аргумент должно быть число.", exec_ctx))
+
+        if not isinstance(exp, Number):
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Второй аргумент должно быть число.", exec_ctx))
+
+        return RTResult().success(Number(math.pow(base.value, exp.value)))
+    execute_pow.arg_names = ["base", "exp"]
+
+
+BuiltInFunction.print       = BuiltInFunction("print")
+BuiltInFunction.print_ret   = BuiltInFunction("print_ret")
+BuiltInFunction.input       = BuiltInFunction("input")
+BuiltInFunction.input_int   = BuiltInFunction("input_int")
+BuiltInFunction.clear       = BuiltInFunction("clear")
+BuiltInFunction.is_number   = BuiltInFunction("is_number")
+BuiltInFunction.is_string   = BuiltInFunction("is_string")
+BuiltInFunction.is_list     = BuiltInFunction("is_list")
+BuiltInFunction.is_function = BuiltInFunction("is_function")
+BuiltInFunction.append      = BuiltInFunction("append")
+BuiltInFunction.pop         = BuiltInFunction("pop")
+BuiltInFunction.extend      = BuiltInFunction("extend")
+BuiltInFunction.sqrt        = BuiltInFunction("sqrt")
+BuiltInFunction.pow         = BuiltInFunction("pow")
+
 
 #######################################
 # CONTEXT
@@ -1406,7 +1613,7 @@ class Interpreter:
         if not value:
             return res.failure(RTError(node.pos_start, node.pos_end, f"'{var_name}' не определён", context))
 
-        value = value.copy().set_pos(node.pos_start, node.pos_end)
+        value = value.copy().set_pos(node.pos_start, node.pos_end).set_context(context)
         return res.success(value)
 
     def visit_VarAssignNode(self, node, context):
@@ -1582,8 +1789,8 @@ class Interpreter:
                 return res
 
         return_value = res.register(value_to_call.execute(args))
-        if res.error:
-            return res
+        if res.error: return res
+        return_value = return_value.copy().set_pos(node.pos_start, node.pos_end).set_context(context)
         return res.success(return_value)
 
 
@@ -1591,9 +1798,27 @@ class Interpreter:
 # RUN
 #######################################
 global_symbol_table = SymbolTable()
-global_symbol_table.set("ПУСТОЙ", Number(0))
-global_symbol_table.set("ВЕРНО", Number(1))
-global_symbol_table.set("НЕВЕРНО", Number(0))
+global_symbol_table.set("ПУСТОЙ", Number.null)
+global_symbol_table.set("ИСТИНА", Number.true)
+global_symbol_table.set("ЛОЖЬ", Number.false)
+global_symbol_table.set("Е", Number.math_E)
+global_symbol_table.set("ПИ", Number.math_PI)
+global_symbol_table.set("ТАУ", Number.math_TAU)
+global_symbol_table.set("БЕСКОНЕЧНОСТЬ", Number.math_INF)
+global_symbol_table.set("СООБЩИТЬ", BuiltInFunction.print)
+global_symbol_table.set("СООБЩИТЬ_ВОЗ", BuiltInFunction.print_ret)
+global_symbol_table.set("ВВОД", BuiltInFunction.input)
+global_symbol_table.set("ВВОД_ЧИС", BuiltInFunction.input_int)
+global_symbol_table.set("ОЧИСТИТЬ", BuiltInFunction.clear)
+global_symbol_table.set("ЕСТЬ_ЧИСЛО", BuiltInFunction.is_number)
+global_symbol_table.set("ЕСТЬ_СТРОКА", BuiltInFunction.is_string)
+global_symbol_table.set("ЕСТЬ_СПИСОК", BuiltInFunction.is_list)
+global_symbol_table.set("ЕСТЬ_ФУНКЦИЯ", BuiltInFunction.is_function)
+global_symbol_table.set("ДОБАВИТЬ", BuiltInFunction.append)
+global_symbol_table.set("ИЗВЛЕКАТЬ", BuiltInFunction.pop)
+global_symbol_table.set("ОБЬЕДИНИТЬ", BuiltInFunction.extend)
+global_symbol_table.set("КВАД_КОР", BuiltInFunction.sqrt)
+global_symbol_table.set("ЭКСПОНЕНТА", BuiltInFunction.pow)
 
 
 def run(fn, text):

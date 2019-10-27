@@ -1,10 +1,10 @@
-import rus
+import magic
 
 while True:
-    text = input('рус > ')
-    result, error = rus.run('<stdin>', text)
+    text = input('магия > ')
+    result, error = magic.run('<stdin>', text)
 
     if error:
         print(error.as_string())
     elif result:
-        print(result)
+        print(repr(result))
