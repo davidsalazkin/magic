@@ -19,7 +19,6 @@ LETTERS_DIGITS = LETTERS + DIGITS
 # ERRORS
 #######################################
 
-
 class Error:
     def __init__(self, pos_start, pos_end, error_name, details):
         self.pos_start = pos_start
@@ -33,21 +32,17 @@ class Error:
         result += '\n\n' + string_with_arrows(self.pos_start.ftxt, self.pos_start, self.pos_end)
         return result
 
-
 class IllegalCharError(Error):
     def __init__(self, pos_start, pos_end, details):
         super().__init__(pos_start, pos_end, 'Незаконный символ', details)
-
 
 class ExpectedCharError(Error):
     def __init__(self, pos_start, pos_end, details):
         super().__init__(pos_start, pos_end, 'Ожидали символ', details)
 
-
 class InvalidSyntaxError(Error):
     def __init__(self, pos_start, pos_end, details=''):
         super().__init__(pos_start, pos_end, 'Незаконный синтакс', details)
-
 
 class RTError(Error):
     def __init__(self, pos_start, pos_end, details, context):
@@ -77,7 +72,6 @@ class RTError(Error):
 # POSITION
 #######################################
 
-
 class Position():
     def __init__(self, idx, ln, col, fn, ftxt):
         self.idx = idx
@@ -102,7 +96,6 @@ class Position():
 #######################################
 # TOKENS
 #######################################
-
 
 TT_INT = 'INT'
 TT_FLOAT = 'FLOAT'
@@ -145,7 +138,6 @@ KEYWORDS = [
     'ОПРЕД'
 ]
 
-
 class Token:
     def __init__(self, type_, value=None, pos_start=None, pos_end=None):
         self.type = type_
@@ -170,7 +162,6 @@ class Token:
 #######################################
 # LEXER
 #######################################
-
 
 class Lexer:
     def __init__(self, fn, text):
@@ -360,7 +351,6 @@ class Lexer:
 # NODES
 #######################################
 
-
 class NumberNode:
     def __init__(self, tok):
         self.tok = tok
@@ -370,7 +360,6 @@ class NumberNode:
 
     def __repr__(self):
         return f'{self.tok}'
-
 
 class StringNode:
     def __init__(self, tok):
@@ -382,14 +371,12 @@ class StringNode:
     def __repr__(self):
         return f'{self.tok}'
 
-
 class ListNode:
     def __init__(self, element_nodes, pos_start, pos_end):
         self.element_nodes = element_nodes
 
         self.pos_start = pos_start
         self.pos_end = pos_end
-
 
 class VarAccessNode:
     def __init__(self, var_name_tok):
@@ -398,7 +385,6 @@ class VarAccessNode:
         self.pos_start = self.var_name_tok.pos_start
         self.pos_end = self.var_name_tok.pos_end
 
-
 class VarAssignNode:
     def __init__(self, var_name_tok, value_node):
         self.var_name_tok = var_name_tok
@@ -406,7 +392,6 @@ class VarAssignNode:
 
         self.pos_start = self.var_name_tok.pos_start
         self.pos_end = self.value_node.pos_end
-
 
 class BinOpNode:
     def __init__(self, left_node, op_tok, right_node):
@@ -420,7 +405,6 @@ class BinOpNode:
     def __repr__(self):
         return f'({self.left_node}, {self.op_tok}, {self.right_node})'
 
-
 class UnaryOpNode:
     def __init__(self, op_tok, node):
         self.op_tok = op_tok
@@ -432,7 +416,6 @@ class UnaryOpNode:
     def __repr__(self):
         return f'({self.op_tok}, {self.node})'
 
-
 class IfNode:
     def __init__(self, cases, else_case):
         self.cases = cases
@@ -440,7 +423,6 @@ class IfNode:
 
         self.pos_start = self.cases[0][0].pos_start
         self.pos_end = (self.else_case or self.cases[len(self.cases) - 1][0]).pos_end
-
 
 class ForNode:
     def __init__(self, var_name_tok, start_value_node, end_value_node, step_value_node, body_node):
@@ -453,7 +435,6 @@ class ForNode:
         self.pos_start = self.var_name_tok.pos_start
         self.pos_end = self.body_node.pos_end
 
-
 class WhileNode:
     def __init__(self, condition_node, body_node):
         self.condition_node = condition_node
@@ -461,7 +442,6 @@ class WhileNode:
 
         self.pos_start = self.condition_node.pos_start
         self.pos_end = self.body_node.pos_end
-
 
 class FuncDefNode:
     def __init__(self, var_name_tok, arg_name_toks, body_node):
@@ -478,7 +458,6 @@ class FuncDefNode:
 
         self.pos_end = self.body_node.pos_end
 
-
 class CallNode:
     def __init__(self, node_to_call, arg_nodes):
         self.node_to_call = node_to_call
@@ -494,7 +473,6 @@ class CallNode:
 #######################################
 # PARSE RESULT
 #######################################
-
 
 class ParseResult:
     def __init__(self):
@@ -523,7 +501,6 @@ class ParseResult:
 #######################################
 # PARSER
 #######################################
-
 
 class Parser:
     def __init__(self, tokens):
@@ -579,7 +556,6 @@ class Parser:
             self.advance()
 
         return res.success(ListNode(element_nodes, pos_start, self.current_tok.pos_end.copy()))
-
 
     def if_expr(self):
         res = ParseResult()
@@ -1008,7 +984,6 @@ class Parser:
 # RUNTIME RESULT
 #######################################
 
-
 class RTResult:
     def __init__(self):
         self.value = None
@@ -1027,11 +1002,9 @@ class RTResult:
         self.error = error
         return self
 
-
 #######################################
 # VALUES
 #######################################
-
 
 class Value:
     def __init__(self):
@@ -1086,7 +1059,7 @@ class Value:
     def ored_by(self, other):
         return None, self.illegal_operation(other)
 
-    def notted(self):
+    def notted(self, other):
         return None, self.illegal_operation(other)
 
     def execute(self, args):
@@ -1106,7 +1079,6 @@ class Value:
             'Незаконная операция',
             self.context
         )
-
 
 class Number(Value):
     def __init__(self, value):
@@ -1218,7 +1190,6 @@ Number.math_PI = Number(math.pi)
 Number.math_TAU = Number(math.tau)
 Number.math_INF = Number(math.inf)
 
-
 class String(Value):
     def __init__(self, value):
         super().__init__()
@@ -1250,7 +1221,6 @@ class String(Value):
 
     def __repr__(self):
         return f'"{self.value}"'
-
 
 class List(Value):
     def __init__(self, elements):
@@ -1302,7 +1272,6 @@ class List(Value):
     def __repr__(self):
         return f'[{", ".join([str(x) for x in self.elements])}]'
 
-
 class BaseFunction(Value):
     def __init__(self, name):
         super().__init__()
@@ -1346,7 +1315,6 @@ class BaseFunction(Value):
         if res.error: return res
         self.populate_args(arg_names, args, exec_ctx)
         return res.success(None)
-
 
 class Function(BaseFunction):
     def __init__(self, name, body_node, arg_names):
@@ -1409,14 +1377,27 @@ class BuiltInFunction(BaseFunction):
 
     ######### Built-In Functions #########
 
+    ## General functions ##
+
     def execute_print(self, exec_ctx):
         print(str(exec_ctx.symbol_table.get('value')))
         return RTResult().success(Number.null)
     execute_print.arg_names = ['value']
 
-    def execute_print_ret(self, exec_ctx):
+    def execute_string(self, exec_ctx):
         return RTResult().success(String(str(exec_ctx.symbol_table.get('value'))))
-    execute_print_ret.arg_names = ['value']
+    execute_string.arg_names = ['value']
+
+    def execute_int(self, exec_ctx):
+        element = exec_ctx.symbol_table.get('value')
+        while True:
+            try:
+                number = int(element.value)
+                break
+            except ValueError:
+                print(f"Аргумент должен быть числом.")
+        return RTResult().success(Number(number))
+    execute_int.arg_names = ['value']
 
     def execute_input(self, exec_ctx):
         text = input()
@@ -1430,7 +1411,7 @@ class BuiltInFunction(BaseFunction):
                 number = int(text)
                 break
             except ValueError:
-                print(f"'{text}' должно быть целое число. Попробуй еще раз!")
+                print(f"'{text}' должен быть целым числом. Попробуй еще раз!")
         return RTResult().success(Number(number))
     execute_input_int.arg_names = []
 
@@ -1458,6 +1439,8 @@ class BuiltInFunction(BaseFunction):
         is_number = isinstance(exec_ctx.symbol_table.get("value"), BaseFunction)
         return RTResult().success(Number.true if is_number else Number.false)
     execute_is_function.arg_names = ["value"]
+
+    ## List functions
 
     def execute_append(self, exec_ctx):
         list_ = exec_ctx.symbol_table.get("list")
@@ -1501,12 +1484,36 @@ class BuiltInFunction(BaseFunction):
         return RTResult().success(Number.null)
     execute_extend.arg_names = ["listA", "listB"]
 
+    def execute_length(self, exec_ctx):
+        list_ = exec_ctx.symbol_table.get("list_")
+
+        if not isinstance(list_, List):
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Аргумент должен быть список.", exec_ctx))
+
+        length = len(list_.elements)
+        return RTResult().success(Number(length))
+    execute_length.arg_names = ['list_']
+
+    def execute_sorted(self, exec_ctx):
+        list_ = exec_ctx.symbol_table.get("list_")
+        pythonList = []
+
+        if not isinstance(list_, List):
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Аргумент должен быть список.", exec_ctx))
+
+        for number in list_.elements:
+            pythonList.append(number.value)
+
+        return RTResult().success(List(sorted(pythonList)))
+    execute_sorted.arg_names = ["list_"]
+
+    # Math functions
+
     def execute_sqrt(self, exec_ctx):
         number = exec_ctx.symbol_table.get("value")
-        print(number)
 
         if not isinstance(number, Number):
-            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Аргумент должно быть число.", exec_ctx))
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Аргумент должен быть числом.", exec_ctx))
 
         return RTResult().success(Number(math.sqrt(number.value)))
     execute_sqrt.arg_names = ["value"]
@@ -1516,17 +1523,26 @@ class BuiltInFunction(BaseFunction):
         exp = exec_ctx.symbol_table.get("exp")
 
         if not isinstance(base, Number):
-            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Первый аргумент должно быть число.", exec_ctx))
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Первый аргумент должен быть числом.", exec_ctx))
 
         if not isinstance(exp, Number):
-            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Второй аргумент должно быть число.", exec_ctx))
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Второй аргумент должен быть числом.", exec_ctx))
 
         return RTResult().success(Number(math.pow(base.value, exp.value)))
     execute_pow.arg_names = ["base", "exp"]
 
+    def execute_abs(self, exec_ctx):
+        number = exec_ctx.symbol_table.get("value")
+
+        if not isinstance(number, Number):
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Аргумент должен быть числом.", exec_ctx))
+
+        return RTResult().success(Number(abs(number.value)))
+    execute_abs.arg_names = ["value"]
 
 BuiltInFunction.print       = BuiltInFunction("print")
-BuiltInFunction.print_ret   = BuiltInFunction("print_ret")
+BuiltInFunction.string      = BuiltInFunction("string")
+BuiltInFunction.int         = BuiltInFunction("int")
 BuiltInFunction.input       = BuiltInFunction("input")
 BuiltInFunction.input_int   = BuiltInFunction("input_int")
 BuiltInFunction.clear       = BuiltInFunction("clear")
@@ -1537,14 +1553,15 @@ BuiltInFunction.is_function = BuiltInFunction("is_function")
 BuiltInFunction.append      = BuiltInFunction("append")
 BuiltInFunction.pop         = BuiltInFunction("pop")
 BuiltInFunction.extend      = BuiltInFunction("extend")
+BuiltInFunction.length      = BuiltInFunction("length")
+BuiltInFunction.sorted      = BuiltInFunction("sorted")
 BuiltInFunction.sqrt        = BuiltInFunction("sqrt")
 BuiltInFunction.pow         = BuiltInFunction("pow")
-
+BuiltInFunction.abs         = BuiltInFunction("abs")
 
 #######################################
 # CONTEXT
 #######################################
-
 
 class Context:
     def __init__(self, display_name, parent=None, parent_entry_pos=None):
@@ -1556,7 +1573,6 @@ class Context:
 #######################################
 # SYMBOL TABLE
 #######################################
-
 
 class SymbolTable:
     def __init__(self, parent=None):
@@ -1578,7 +1594,6 @@ class SymbolTable:
 #######################################
 # INTERPRETER
 #######################################
-
 
 class Interpreter:
     def visit(self, node, context):
@@ -1793,10 +1808,10 @@ class Interpreter:
         return_value = return_value.copy().set_pos(node.pos_start, node.pos_end).set_context(context)
         return res.success(return_value)
 
-
 #######################################
 # RUN
 #######################################
+
 global_symbol_table = SymbolTable()
 global_symbol_table.set("ПУСТОЙ", Number.null)
 global_symbol_table.set("ИСТИНА", Number.true)
@@ -1806,7 +1821,8 @@ global_symbol_table.set("ПИ", Number.math_PI)
 global_symbol_table.set("ТАУ", Number.math_TAU)
 global_symbol_table.set("БЕСКОНЕЧНОСТЬ", Number.math_INF)
 global_symbol_table.set("СООБЩИТЬ", BuiltInFunction.print)
-global_symbol_table.set("СООБЩИТЬ_ВОЗ", BuiltInFunction.print_ret)
+global_symbol_table.set("СТРОКА", BuiltInFunction.string)
+global_symbol_table.set("ЦЕЛОЕ", BuiltInFunction.int)
 global_symbol_table.set("ВВОД", BuiltInFunction.input)
 global_symbol_table.set("ВВОД_ЧИС", BuiltInFunction.input_int)
 global_symbol_table.set("ОЧИСТИТЬ", BuiltInFunction.clear)
@@ -1817,9 +1833,11 @@ global_symbol_table.set("ЕСТЬ_ФУНКЦИЯ", BuiltInFunction.is_function)
 global_symbol_table.set("ДОБАВИТЬ", BuiltInFunction.append)
 global_symbol_table.set("ИЗВЛЕКАТЬ", BuiltInFunction.pop)
 global_symbol_table.set("ОБЬЕДИНИТЬ", BuiltInFunction.extend)
+global_symbol_table.set("ДЛИНА", BuiltInFunction.length)
+global_symbol_table.set("СОРТ", BuiltInFunction.sorted)
 global_symbol_table.set("КВАД_КОР", BuiltInFunction.sqrt)
 global_symbol_table.set("ЭКСПОНЕНТА", BuiltInFunction.pow)
-
+global_symbol_table.set("АБСОЛЮТНАЯ", BuiltInFunction.abs)
 
 def run(fn, text):
     # Generate tokens

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg enable-background="new 0 0 230.3 229.9" version="1.1" viewBox="0 0 230.3 229.9" xmlns="http://www.w3.org/2000/svg">
+ <style type="text/css">.st0{fill:url(#c);stroke:#231F20;stroke-miterlimit:10;} .st1{fill:url(#d);}</style>
+ <radialGradient id="c" cx="115.62" cy="115.33" r="111.33" gradientUnits="userSpaceOnUse">
+  <stop stop-color="#00AEEF" stop-opacity=".2" offset=".9385"/>
+  <stop stop-color="#231F20" offset="1"/>
+ </radialGradient>
+ <circle class="st0" cx="115.6" cy="115.3" r="111.3"/>
+ <radialGradient id="d" cx="129.02" cy="113.79" r="9.5241" gradientTransform="matrix(1.6954 -1.6954 .7502 .7502 -235.2 192.26)" gradientUnits="userSpaceOnUse">
+  <stop stop-color="#fff" offset=".5897"/>
+  <stop stop-color="#fff" stop-opacity="0" offset="1"/>
+ </radialGradient>
+ <path class="st1" d="M59.8,49.8C71.6,38,85.2,32.5,90.2,37.6S89.8,56.2,78,68S52.6,85.2,47.6,80.2S48,61.5,59.8,49.8z"/>
+</svg>
