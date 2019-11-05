@@ -1,4 +1,4 @@
-- [Группа Телеграм](https://telegram.me/magiclang)
-- Язык
+- [Telegram Group](https://telegram.me/magiclang)
+- Language
     - [:us: English ](/en/)
     - [:ru: Русский &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;](/)
