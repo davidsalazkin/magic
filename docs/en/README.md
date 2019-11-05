@@ -1,18 +1,4 @@
 ## Magic
 > The World's first open-source Russian programming language.
 
-Магия - это процедурно-ориентированный язык программирования, синтакс которого полностью на русском языке. Магия построена на Python. Кроме того, исходный код Магии доступен в полном объеме на [Github](https://github.com/davidsalazkin/magic). Чтобы начать использовать Mагию....
-
-Прочитайте [основы](основы.md) для более подробной информации.
-
-## Сообщество
-
-<a href="https://telegram.me/magiclang" target="_blank"><img src="https://img.shields.io/badge/telegram-группа-blue" /></a>
-
-Главный центр сообщества Магии это наша группа на Telegram. Если у вас есть вопросы, комментарии или проблемы, идите туда! Для связи, предназначенной для команды Магии, напишите нам по адресу email@example.com.
-
-## Пожертвовать
-
-
-## Спасибо
-Огромное спасибо всем разработчикам, переводчикам и тестировщикам, которые помогли, и продолжают помогать в развитие этого проекта.
+The English documentation translation for the Magic programming language is currently under development. Please check back soon!
