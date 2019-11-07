@@ -1,4 +1,4 @@
-from src import magic
+from src import run as magic
 
 while True:
     text = input('магия > ')
