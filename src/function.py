@@ -1,4 +1,4 @@
-from . import run as ron
+from . import magic as ron
 from .value import *
 from .symboltable import *
 from .rtresult import *
