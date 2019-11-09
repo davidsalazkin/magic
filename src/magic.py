@@ -43,10 +43,18 @@ global_symbol_table.set("ИЗВЛЕКАТЬ", BuiltInFunction.pop)
 global_symbol_table.set("ОБЬЕДИНИТЬ", BuiltInFunction.extend)
 global_symbol_table.set("ДЛИНА", BuiltInFunction.length)
 global_symbol_table.set("СОРТ", BuiltInFunction.sorted)
+global_symbol_table.set("МИН", BuiltInFunction.min)
+global_symbol_table.set("МАКС", BuiltInFunction.max)
+global_symbol_table.set("СУМ", BuiltInFunction.sum)
+global_symbol_table.set("КОМПЛЕКТ", BuiltInFunction.set)
 # Math Functions
 global_symbol_table.set("КВАД_КОР", BuiltInFunction.sqrt)
 global_symbol_table.set("ЭКСПОНЕНТА", BuiltInFunction.pow)
 global_symbol_table.set("АБСОЛЮТНАЯ", BuiltInFunction.abs)
+global_symbol_table.set("ОКРУГЛИТЬ", BuiltInFunction.round)
+global_symbol_table.set("СЛУЧАЙНЫЙ", BuiltInFunction.randint)
+global_symbol_table.set("ПОТОЛОК", BuiltInFunction.ceil)
+global_symbol_table.set("ПОЛ", BuiltInFunction.floor)
 
 def run(fn, text):
     # Generate tokens

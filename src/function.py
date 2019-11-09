@@ -8,7 +8,7 @@ from .number import *
 from .String import *
 from .List import *
 
-import sys, os, math
+import sys, os, math, random
 
 class BaseFunction(Value):
     def __init__(self, name):
@@ -180,6 +180,28 @@ class BuiltInFunction(BaseFunction):
         return RTResult().success(Number.true if is_number else Number.false)
     execute_is_function.arg_names = ["value"]
 
+    def execute_run(self, exec_ctx):
+        fn = exec_ctx.symbol_table.get("fn")
+
+        if not isinstance(fn, String):
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Аргумент должен быть строкой", exec_ctx))
+
+        fn = fn.value
+
+        try:
+            with open(fn, "r") as f:
+                script = f.read()
+        except Exception as e:
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, f"Не удалось загрузить файл \"{fn}\"\n" + str(e), exec_ctx))
+
+        _, error = ron.run(fn, script)
+
+        if error:
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, f"Не удалось загрузить файл \"{fn}\"\n" + error.as_string(), exec_ctx))
+
+        return RTResult().success(Number.null)
+    execute_run.arg_names = ["fn"]
+
     ## List functions
 
     def execute_append(self, exec_ctx):
@@ -247,6 +269,58 @@ class BuiltInFunction(BaseFunction):
         return RTResult().success(List(sorted(pythonList)))
     execute_sorted.arg_names = ["list_"]
 
+    def execute_min(self, exec_ctx):
+        list_ = exec_ctx.symbol_table.get("list_")
+        pythonList = []
+
+        if not isinstance(list_, List):
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Аргумент должен быть список.", exec_ctx))
+
+        for number in list_.elements:
+            pythonList.append(number.value)
+
+        return RTResult().success(Number(min(pythonList)))
+    execute_min.arg_names = ["list_"]
+
+    def execute_max(self, exec_ctx):
+        list_ = exec_ctx.symbol_table.get("list_")
+        pythonList = []
+
+        if not isinstance(list_, List):
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Аргумент должен быть список.", exec_ctx))
+
+        for number in list_.elements:
+            pythonList.append(number.value)
+
+        return RTResult().success(Number(max(pythonList)))
+    execute_max.arg_names = ["list_"]
+
+    def execute_sum(self, exec_ctx):
+        list_ = exec_ctx.symbol_table.get("list_")
+        pythonList = []
+
+        if not isinstance(list_, List):
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Аргумент должен быть список.", exec_ctx))
+
+        for number in list_.elements:
+            pythonList.append(number.value)
+
+        return RTResult().success(Number(sum(pythonList)))
+    execute_sum.arg_names = ["list_"]
+
+    def execute_set(self, exec_ctx):
+        list_ = exec_ctx.symbol_table.get("list_")
+        pythonList = []
+
+        if not isinstance(list_, List):
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Аргумент должен быть список.", exec_ctx))
+
+        for number in list_.elements:
+            pythonList.append(number.value)
+
+        return RTResult().success(List(list(set(pythonList))))
+    execute_set.arg_names = ["list_"]
+
     # Math functions
 
     def execute_sqrt(self, exec_ctx):
@@ -280,28 +354,50 @@ class BuiltInFunction(BaseFunction):
         return RTResult().success(Number(abs(number.value)))
     execute_abs.arg_names = ["value"]
 
-    def execute_run(self, exec_ctx):
-        fn = exec_ctx.symbol_table.get("fn")
+    def execute_round(self, exec_ctx):
+        number = exec_ctx.symbol_table.get("value")
 
-        if not isinstance(fn, String):
-            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Аргумент должен быть строкой", exec_ctx))
+        if not isinstance(number, Number):
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Аргумент должен быть числом.", exec_ctx))
 
-        fn = fn.value
+        return RTResult().success(Number(round(number.value)))
+    execute_round.arg_names = ["value"]
 
-        try:
-            with open(fn, "r") as f:
-                script = f.read()
-        except Exception as e:
-            return RTResult().failure(RTError(self.pos_start, self.pos_end, f"Не удалось загрузить файл \"{fn}\"\n" + str(e), exec_ctx))
+    def execute_randint(self, exec_ctx):
+        lo = exec_ctx.symbol_table.get("lo")
+        hi = exec_ctx.symbol_table.get("hi")
 
-        _, error = ron.run(fn, script)
+        if not isinstance(lo, Number):
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Первый аргумент должен быть числом.", exec_ctx))
 
-        if error:
-            return RTResult().failure(RTError(self.pos_start, self.pos_end, f"Не удалось загрузить файл \"{fn}\"\n" + error.as_string(), exec_ctx))
+        if not isinstance(hi, Number):
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Второй аргумент должен быть числом.", exec_ctx))
 
-        return RTResult().success(Number.null)
-    execute_run.arg_names = ["fn"]
+        if lo.value >= hi.value:
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Второй аргумент должен быть больше первого.", exec_ctx))
+        else:
+            return RTResult().success(Number(random.randint(lo.value, hi.value)))
+    execute_randint.arg_names = ["lo", "hi"]
 
+    def execute_ceil(self, exec_ctx):
+        number = exec_ctx.symbol_table.get("value")
+
+        if not isinstance(number, Number):
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Аргумент должен быть числом.", exec_ctx))
+
+        return RTResult().success(Number(math.ceil(number.value)))
+    execute_ceil.arg_names = ["value"]
+
+    def execute_floor(self, exec_ctx):
+        number = exec_ctx.symbol_table.get("value")
+
+        if not isinstance(number, Number):
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Аргумент должен быть числом.", exec_ctx))
+
+        return RTResult().success(Number(math.floor(number.value)))
+    execute_floor.arg_names = ["value"]
+
+# General
 BuiltInFunction.print       = BuiltInFunction("print")
 BuiltInFunction.string      = BuiltInFunction("string")
 BuiltInFunction.int         = BuiltInFunction("int")
@@ -312,14 +408,24 @@ BuiltInFunction.is_number   = BuiltInFunction("is_number")
 BuiltInFunction.is_string   = BuiltInFunction("is_string")
 BuiltInFunction.is_list     = BuiltInFunction("is_list")
 BuiltInFunction.is_function = BuiltInFunction("is_function")
+BuiltInFunction.run         = BuiltInFunction("run")
+# List
 BuiltInFunction.append      = BuiltInFunction("append")
 BuiltInFunction.pop         = BuiltInFunction("pop")
 BuiltInFunction.extend      = BuiltInFunction("extend")
 BuiltInFunction.length      = BuiltInFunction("length")
 BuiltInFunction.sorted      = BuiltInFunction("sorted")
+BuiltInFunction.min         = BuiltInFunction("min")
+BuiltInFunction.max         = BuiltInFunction("max")
+BuiltInFunction.sum         = BuiltInFunction("sum")
+BuiltInFunction.set         = BuiltInFunction("set")
+# Math
 BuiltInFunction.sqrt        = BuiltInFunction("sqrt")
 BuiltInFunction.pow         = BuiltInFunction("pow")
 BuiltInFunction.abs         = BuiltInFunction("abs")
-BuiltInFunction.run         = BuiltInFunction("run")
+BuiltInFunction.round       = BuiltInFunction("round")
+BuiltInFunction.randint     = BuiltInFunction("randint")
+BuiltInFunction.ceil        = BuiltInFunction("ceil")
+BuiltInFunction.floor       = BuiltInFunction("floor")
 
 from .interpreter import Interpreter
