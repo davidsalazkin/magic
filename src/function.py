@@ -1,3 +1,7 @@
+#######################################
+# FUNCTION
+#######################################
+
 from . import magic as ron
 from .value import *
 from .symboltable import *
@@ -120,13 +124,13 @@ class BuiltInFunction(BaseFunction):
     ## General functions ##
 
     def execute_print(self, exec_ctx):
-        print(str(exec_ctx.symbol_table.get('value')))
+        print(str(exec_ctx.symbol_table.get("value")))
         return RTResult().success(Number.null)
-    execute_print.arg_names = ['value']
+    execute_print.arg_names = ["value"]
 
     def execute_string(self, exec_ctx):
-        return RTResult().success(String(str(exec_ctx.symbol_table.get('value'))))
-    execute_string.arg_names = ['value']
+        return RTResult().success(String(str(exec_ctx.symbol_table.get("value"))))
+    execute_string.arg_names = ["value"]
 
     def execute_int(self, exec_ctx):
         element = exec_ctx.symbol_table.get('value')
@@ -137,7 +141,7 @@ class BuiltInFunction(BaseFunction):
             except ValueError:
                 print(f"Аргумент должен быть числом.")
         return RTResult().success(Number(number))
-    execute_int.arg_names = ['value']
+    execute_int.arg_names = ["value"]
 
     def execute_input(self, exec_ctx):
         text = input()
@@ -168,7 +172,7 @@ class BuiltInFunction(BaseFunction):
     def execute_is_string(self, exec_ctx):
         is_string = isinstance(exec_ctx.symbol_table.get("value"), String)
         return RTResult().success(Number.true if is_string else Number.false)
-    execute_is_string.arg_names = ['value']
+    execute_is_string.arg_names = ["value"]
 
     def execute_is_list(self, exec_ctx):
         is_number = isinstance(exec_ctx.symbol_table.get("value"), List)
@@ -230,7 +234,7 @@ class BuiltInFunction(BaseFunction):
         except:
             return RTResult().failure(RTError(self.pos_start, self.pos_end, "Элемент у этого индекса не может быть удален из списка, поскольку индекс находится за пределами границ", exec_ctx))
         return RTResult().success(element)
-    execute_pop.arg_names = ['list', 'index']
+    execute_pop.arg_names = ["list", "index"]
 
     def execute_extend(self, exec_ctx):
         listA = exec_ctx.symbol_table.get("listA")
@@ -254,7 +258,7 @@ class BuiltInFunction(BaseFunction):
 
         length = len(list_.elements)
         return RTResult().success(Number(length))
-    execute_length.arg_names = ['list_']
+    execute_length.arg_names = ["list_"]
 
     def execute_sorted(self, exec_ctx):
         list_ = exec_ctx.symbol_table.get("list_")
@@ -320,6 +324,19 @@ class BuiltInFunction(BaseFunction):
 
         return RTResult().success(List(list(set(pythonList))))
     execute_set.arg_names = ["list_"]
+
+    def execute_reverse(self, exec_ctx):
+        list_ = exec_ctx.symbol_table.get("list_")
+        pythonList = []
+
+        if not isinstance(list_, List):
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Аргумент должен быть список.", exec_ctx))
+
+        for number in list_.elements:
+            pythonList.append(number.value)
+
+        return RTResult().success(List(reversed(pythonList)))
+    execute_reverse.arg_names = ["list_"]
 
     # Math functions
 
@@ -397,6 +414,55 @@ class BuiltInFunction(BaseFunction):
         return RTResult().success(Number(math.floor(number.value)))
     execute_floor.arg_names = ["value"]
 
+    def execute_factorial(self, exec_ctx):
+        number = exec_ctx.symbol_table.get("value")
+
+        if not isinstance(number, Number) or number.value < 0:
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Аргумент должен быть положительным числом.", exec_ctx))
+
+        return RTResult().success(Number(math.factorial(number.value)))
+    execute_factorial.arg_names = ["value"]
+
+    def execute_gcd(self, exec_ctx):
+        n1 = exec_ctx.symbol_table.get("n1")
+        n2 = exec_ctx.symbol_table.get("n2")
+
+        if not isinstance(n1, Number) or n1.value < 0:
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Первый аргумент должен быть положительным числом.", exec_ctx))
+
+        if not isinstance(n2, Number) or n2.value < 0:
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Второй аргумент должен быть положительным числом.", exec_ctx))
+
+        return RTResult().success(Number(math.gcd(n1.value, n2.value)))
+    execute_gcd.arg_names = ["n1", "n2"]
+
+    def execute_cos(self, exec_ctx):
+        n = exec_ctx.symbol_table.get("n")
+
+        if not isinstance(n, Number):
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Аргумент должен быть числом.", exec_ctx))
+
+        return RTResult().success(Number(math.cos(n.value)))
+    execute_cos.arg_names = ["n"]
+
+    def execute_sin(self, exec_ctx):
+        n = exec_ctx.symbol_table.get("n")
+
+        if not isinstance(n, Number):
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Аргумент должен быть числом.", exec_ctx))
+
+        return RTResult().success(Number(math.sin(n.value)))
+    execute_sin.arg_names = ["n"]
+
+    def execute_tan(self, exec_ctx):
+        n = exec_ctx.symbol_table.get("n")
+
+        if not isinstance(n, Number):
+            return RTResult().failure(RTError(self.pos_start, self.pos_end, "Аргумент должен быть числом.", exec_ctx))
+
+        return RTResult().success(Number(math.tan(n.value)))
+    execute_tan.arg_names = ["n"]
+
 # General
 BuiltInFunction.print       = BuiltInFunction("print")
 BuiltInFunction.string      = BuiltInFunction("string")
@@ -419,6 +485,8 @@ BuiltInFunction.min         = BuiltInFunction("min")
 BuiltInFunction.max         = BuiltInFunction("max")
 BuiltInFunction.sum         = BuiltInFunction("sum")
 BuiltInFunction.set         = BuiltInFunction("set")
+BuiltInFunction.reverse     = BuiltInFunction("reverse")
+
 # Math
 BuiltInFunction.sqrt        = BuiltInFunction("sqrt")
 BuiltInFunction.pow         = BuiltInFunction("pow")
@@ -427,5 +495,10 @@ BuiltInFunction.round       = BuiltInFunction("round")
 BuiltInFunction.randint     = BuiltInFunction("randint")
 BuiltInFunction.ceil        = BuiltInFunction("ceil")
 BuiltInFunction.floor       = BuiltInFunction("floor")
+BuiltInFunction.factorial   = BuiltInFunction("factorial")
+BuiltInFunction.gcd         = BuiltInFunction("gcd")
+BuiltInFunction.cos         = BuiltInFunction("cos")
+BuiltInFunction.sin         = BuiltInFunction("sin")
+BuiltInFunction.tan         = BuiltInFunction("tan")
 
 from .interpreter import Interpreter

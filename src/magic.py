@@ -8,6 +8,7 @@ from .interpreter import *
 from .symboltable import *
 import math
 
+# Constants
 Number.null = Number(0)
 Number.true = Number(1)
 Number.false = Number(0)
@@ -47,6 +48,8 @@ global_symbol_table.set("МИН", BuiltInFunction.min)
 global_symbol_table.set("МАКС", BuiltInFunction.max)
 global_symbol_table.set("СУМ", BuiltInFunction.sum)
 global_symbol_table.set("КОМПЛЕКТ", BuiltInFunction.set)
+global_symbol_table.set("ОБРАТНЫЙ", BuiltInFunction.reverse)
+
 # Math Functions
 global_symbol_table.set("КВАД_КОР", BuiltInFunction.sqrt)
 global_symbol_table.set("ЭКСПОНЕНТА", BuiltInFunction.pow)
@@ -55,6 +58,11 @@ global_symbol_table.set("ОКРУГЛИТЬ", BuiltInFunction.round)
 global_symbol_table.set("СЛУЧАЙНЫЙ", BuiltInFunction.randint)
 global_symbol_table.set("ПОТОЛОК", BuiltInFunction.ceil)
 global_symbol_table.set("ПОЛ", BuiltInFunction.floor)
+global_symbol_table.set("ФАКТОРИАЛ", BuiltInFunction.factorial)
+global_symbol_table.set("СБОД", BuiltInFunction.gcd)
+global_symbol_table.set("КОС", BuiltInFunction.cos)
+global_symbol_table.set("СИН", BuiltInFunction.sin)
+global_symbol_table.set("ТАН", BuiltInFunction.tan)
 
 def run(fn, text):
     # Generate tokens
